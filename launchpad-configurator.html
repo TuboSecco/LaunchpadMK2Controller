@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Launchpad MK2 — Macro Configurator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #2a2b2e;
+    --bg2:       #313236;
+    --bg3:       #3a3b40;
+    --bg4:       #42434a;
+    --border:    #404148;
+    --border2:   #505158;
+    --text:      #c8c9cc;
+    --text2:     #888994;
+    --text3:     #585968;
+    --accent:    #ff6a20;
+    --accent2:   #e05510;
+    --accent-glow: rgba(255,106,32,0.18);
+    --danger:    #e05050;
+    --success:   #50c880;
+    --radius:    8px;
+    --radius2:   12px;
+    --radius3:   16px;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ─────────────────────────────────── */
+  .shell {
+    display: grid;
+    grid-template-columns: 210px 1fr 288px;
+    grid-template-rows: 56px 1fr 56px;
+    height: 100vh;
+  }
+
+  /* ── Top bar ────────────────────────────────── */
+  .topbar {
+    grid-column: 1 / -1;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    gap: 14px;
+  }
+
+  .topbar-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 7px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    padding: 6px;
+  }
+  .logo-icon span {
+    background: rgba(255,255,255,0.9);
+    border-radius: 1.5px;
+    display: block;
+  }
+
+  .topbar-divider {
+    width: 1px; height: 20px;
+    background: var(--border2);
+  }
+
+  .topbar-subtitle {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  .topbar-sep { flex: 1; }
+
+  .topbar-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    border: 1px solid var(--border2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--bg3);
+  }
+
+  /* ── Left sidebar ───────────────────────────── */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 0 14px;
+    overflow-y: auto;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0 16px 12px;
+  }
+
+  .page-item {
+    display: flex;
+    align-items: center;
+    padding: 9px 16px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: background 0.15s, border-color 0.15s;
+    gap: 10px;
+    position: relative;
+  }
+  .page-item:hover { background: var(--bg3); }
+  .page-item.active {
+    background: rgba(79,124,255,0.08);
+    border-left-color: var(--accent);
+  }
+
+  .page-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border2);
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .page-item.active .page-dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  .page-item-name {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text2);
+    transition: color 0.15s;
+  }
+  .page-item.active .page-item-name { color: var(--text); }
+
+  .page-drag-handle {
+    width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    opacity: 0;
+    cursor: grab;
+    transition: opacity 0.12s;
+    color: var(--text3);
+  }
+  .page-drag-handle svg { display: block; }
+  .page-item:hover .page-drag-handle { opacity: 1; }
+  .page-drag-handle:active { cursor: grabbing; }
+
+  .page-del {
+    width: 20px; height: 20px;
+    border: none; background: none;
+    color: var(--text3);
+    cursor: pointer;
+    border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    flex-shrink: 0;
+    transition: all 0.12s;
+    padding: 0;
+  }
+  .page-del svg { display: block; pointer-events: none; }
+  .page-item:hover .page-del { opacity: 1; }
+  .page-del:hover { background: rgba(224,80,80,0.15); color: var(--danger); }
+
+  .page-item.drag-over {
+    border-top: 2px solid var(--accent);
+    margin-top: -2px;
+  }
+  .page-item.dragging {
+    opacity: 0.4;
+  }
+
+  .pad-nav {
+    background: #1e1f2a !important;
+    border-color: rgba(255,106,32,0.3) !important;
+    cursor: default !important;
+  }
+  .pad-nav:hover { transform: none !important; box-shadow: 0 2px 4px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.12) inset !important; }
+  .pad-nav-icon {
+    font-size: 11px;
+    color: rgba(255,106,32,0.55);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .sidebar-add {
+    margin: 12px 12px 0;
+    padding: 9px;
+    background: none;
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    color: var(--text3);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .sidebar-add:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* ── Center ─────────────────────────────────── */
+  .center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    gap: 18px;
+    overflow: auto;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(79,124,255,0.04) 0%, transparent 70%);
+  }
+
+  .page-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .page-badge strong {
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+  }
+
+  .grid-wrap {
+    background: #3a3b40;
+    border: 2px solid #555660;
+    border-radius: var(--radius3);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  }
+
+  .lp-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  /* ── Pad button ─────────────────────────────── */
+  .pad {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: transform 0.1s cubic-bezier(0.34,1.56,0.64,1), border-color 0.12s, box-shadow 0.12s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    position: relative;
+    overflow: hidden;
+    background: #d4d6d0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.12) inset;
+  }
+  .pad:hover {
+    transform: scale(1.1);
+    border-color: rgba(0,0,0,0.35);
+    z-index: 1;
+  }
+  .pad.selected {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(255,106,32,0.5), 0 4px 12px rgba(255,106,32,0.25);
+  }
+  .pad.has-action::after {
+    content: '';
+    position: absolute;
+    bottom: 4px; right: 4px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+  }
+  .pad-label {
+    font-family: var(--font);
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(0,0,0,0.65);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    z-index: 1;
+    pointer-events: none;
+    text-shadow: none;
+  }
+  .pad-note {
+    font-family: var(--mono);
+    font-size: 7px;
+    color: rgba(0,0,0,0.28);
+    line-height: 1;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .row-sep {
+    width: 1px; height: 44px;
+    background: var(--border);
+    margin: 0 3px;
+    flex-shrink: 0;
+  }
+
+  .top-gap { height: 10px; }
+
+  .center-hint {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Right sidebar ──────────────────────────── */
+  .config {
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .config-header {
+    padding: 15px 18px 13px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .config-header-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .config-note-badge {
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 2px 9px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+  }
+
+  .config-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .config-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text3);
+    font-size: 12px;
+    padding: 20px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .config-empty-icon {
+    width: 40px; height: 40px;
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 9px;
+    opacity: 0.5;
+  }
+  .config-empty-icon span {
+    background: var(--border2);
+    border-radius: 2px;
+  }
+
+  /* Form elements */
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12.5px;
+    font-weight: 400;
+    padding: 8px 11px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,124,255,0.12);
+  }
+  .field select option { background: var(--bg3); }
+  .field textarea { resize: vertical; min-height: 52px; }
+
+  /* Color picker grid */
+  .sub-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+  }
+  .color-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.1s cubic-bezier(0.34,1.56,0.64,1), border-color 0.1s;
+  }
+  .color-swatch:hover { transform: scale(1.18); }
+  .color-swatch.selected {
+    border-color: white;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.3);
+  }
+
+  /* Keys */
+  .keys-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 34px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 6px 8px;
+  }
+
+  .key-chip {
+    background: var(--bg4);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    padding: 3px 9px;
+    font-family: var(--mono);
+    font-size: 10px;
+    display: flex; align-items: center; gap: 5px;
+    color: var(--text);
+  }
+  .key-chip button {
+    background: none; border: none;
+    color: var(--text3); cursor: pointer;
+    font-size: 14px; line-height: 1;
+    padding: 0;
+    transition: color 0.1s;
+  }
+  .key-chip button:hover { color: var(--danger); }
+
+  .key-add-row {
+    display: flex; gap: 6px; margin-top: 6px;
+  }
+  .key-add-row select {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .key-add-row select:focus { border-color: var(--accent); }
+
+  .btn-sm {
+    padding: 7px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-sm:hover { background: var(--bg4); color: var(--text); border-color: var(--border2); }
+  .btn-danger { color: var(--danger); border-color: rgba(255,92,122,0.2); }
+  .btn-danger:hover { background: rgba(255,92,122,0.1); border-color: rgba(255,92,122,0.4); color: var(--danger); }
+  .btn-accent {
+    background: rgba(79,124,255,0.12);
+    border-color: rgba(79,124,255,0.35);
+    color: #7aa4ff;
+  }
+  .btn-accent:hover { background: rgba(79,124,255,0.22); color: #9ab8ff; }
+
+  /* ── Bottom bar ─────────────────────────────── */
+  .bottombar {
+    grid-column: 1 / -1;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 8px;
+  }
+
+  .btn-main {
+    padding: 8px 18px;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .btn-export {
+    background: var(--accent);
+    border: 1px solid var(--accent2);
+    color: white;
+    box-shadow: 0 2px 8px rgba(79,124,255,0.3);
+  }
+  .btn-export:hover { background: var(--accent2); box-shadow: 0 4px 16px rgba(79,124,255,0.4); }
+  .btn-import {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+  .btn-import:hover { background: var(--bg4); color: var(--text); }
+
+  .status-msg {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--success);
+    opacity: 0;
+    transition: opacity 0.3s;
+    letter-spacing: 0.02em;
+  }
+  .status-msg.show { opacity: 1; }
+  .status-msg.error { color: var(--danger); }
+
+  .bottom-sep { flex: 1; }
+
+  .pad-count {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Divider ────────────────────────────────── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  /* ── Modal ──────────────────────────────────── */
+  .modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius3);
+    padding: 26px;
+    width: 310px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    animation: modalIn 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes modalIn {
+    from { transform: scale(0.92); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+
+  .modal h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .modal-row { display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      LAUNCHPAD MK2
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-subtitle">Macro Configurator</div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-tag">config.json</div>
+  </div>
+
+  <!-- Left sidebar: pages -->
+  <div class="sidebar">
+    <div class="sidebar-label">Pages</div>
+    <div id="page-list"></div>
+    <button class="sidebar-add" onclick="openAddPage()">+ Add Page</button>
+  </div>
+
+  <!-- Center: LP grid -->
+  <div class="center">
+    <div class="page-badge">
+      Page: <strong id="page-name-display">HOME</strong>
+    </div>
+    <div class="grid-wrap" id="grid-container"></div>
+    <div class="center-hint">Click a pad to configure &nbsp;·&nbsp; dot = action assigned</div>
+  </div>
+
+  <!-- Right sidebar: pad config -->
+  <div class="config">
+    <div class="config-header">
+      <span class="config-header-title">Pad Config</span>
+      <span class="config-note-badge" id="config-note-badge" style="display:none"></span>
+    </div>
+    <div id="config-empty" class="config-empty">
+      <div class="config-empty-icon">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      Select a pad on the grid<br>to configure it
+    </div>
+    <div id="config-body" class="config-body" style="display:none"></div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottombar">
+    <button class="btn-main btn-export" onclick="exportJSON()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export JSON
+    </button>
+    <button class="btn-main btn-import" onclick="document.getElementById('import-input').click()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 14 12 9 7 14"/><line x1="12" y1="9" x2="12" y2="21"/></svg>
+      Import JSON
+    </button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)">
+    <span class="status-msg" id="status-msg"></span>
+    <div class="bottom-sep"></div>
+    <span class="pad-count" id="pad-count"></span>
+  </div>
+
+</div>
+
+<!-- Add page modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h3>New Page</h3>
+    <div class="field">
+      <label>Page Name</label>
+      <input type="text" id="new-page-name" placeholder="e.g. PHOTOSHOP" maxlength="24"
+        onkeydown="if(event.key==='Enter')confirmAddPage()">
+    </div>
+    <div class="modal-row">
+      <button class="btn-sm btn-accent" onclick="confirmAddPage()" style="flex:1">Create</button>
+      <button class="btn-sm" onclick="closeModal()" style="flex:1">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// LP MK2 Color Palette
+// ─────────────────────────────────────────────────────────────────────────────
+const COLORS = [
+  { name:'OFF',    vel:0,  css:'#1a1a20' },
+  { name:'WHITE',  vel:3,  css:'#e0e0e8' },
+  { name:'RED',    vel:5,  css:'#8b2020' },
+  { name:'RED_HI', vel:7,  css:'#e84040' },
+  { name:'ORANGE', vel:9,  css:'#e06020' },
+  { name:'AMBER',  vel:11, css:'#d09010' },
+  { name:'YELLOW', vel:13, css:'#c8c020' },
+  { name:'LIME',   vel:17, css:'#80c020' },
+  { name:'GREEN',  vel:21, css:'#30c040' },
+  { name:'TEAL',   vel:33, css:'#20a080' },
+  { name:'CYAN',   vel:37, css:'#20b8b8' },
+  { name:'SKY',    vel:41, css:'#2090d8' },
+  { name:'BLUE',   vel:45, css:'#2840d0' },
+  { name:'INDIGO', vel:49, css:'#5030c0' },
+  { name:'PURPLE', vel:53, css:'#8030b0' },
+  { name:'PINK',   vel:57, css:'#c02880' },
+];
+const COLOR_BY_NAME = Object.fromEntries(COLORS.map(c => [c.name, c]));
+
+function colorCSS(name) {
+  return (COLOR_BY_NAME[name] || COLORS[0]).css;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Key list
+// ─────────────────────────────────────────────────────────────────────────────
+const KEY_LIST = [
+  'CTRL','SHIFT','ALT','WIN',
+  'LCTRL','RCTRL','LSHIFT','RSHIFT','LALT','RALT',
+  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+  '0','1','2','3','4','5','6','7','8','9',
+  'F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12',
+  'SPACE','ENTER','ESCAPE','TAB','BACKSPACE',
+  'INSERT','DELETE','HOME','END','PGUP','PGDN',
+  'LEFT','RIGHT','UP','DOWN',
+  'NUM0','NUM1','NUM2','NUM3','NUM4',
+  'NUM5','NUM6','NUM7','NUM8','NUM9',
+  'NUM_MUL','NUM_ADD','NUM_SUB','NUM_DOT','NUM_DIV',
+  'OEM_PLUS','OEM_MINUS','OEM_COMMA','OEM_PERIOD',
+  'OEM_1','OEM_2','OEM_3','OEM_4','OEM_5','OEM_6','OEM_7',
+  'VOL_UP','VOL_DOWN','VOL_MUTE',
+  'MEDIA_PLAY','MEDIA_NEXT','MEDIA_PREV',
+  'PRINTSCREEN','SCROLLLOCK','PAUSE','CAPSLOCK',
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let state = {
+  device: 'Launchpad',
+  pages: [
+    { name: 'HOME',      pads: [] },
+    { name: 'LIGHTSHOW', pads: [] }
+  ]
+};
+
+let currentPageIdx = 0;
+let selectedNote   = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid layout
+// ─────────────────────────────────────────────────────────────────────────────
+function buildGridLayout() {
+  const rows = [];
+  rows.push({
+    pads: Array.from({ length: 8 }, (_, i) => ({ note: 104 + i, label: String(104 + i) })),
+    isCCRow: true
+  });
+  for (let row = 8; row >= 1; row--) {
+    rows.push({
+      pads:    Array.from({ length: 8 }, (_, i) => ({ note: row * 10 + (i + 1), label: String(row * 10 + (i + 1)) })),
+      sidePad: { note: row * 10 + 9, label: String(row * 10 + 9) }
+    });
+  }
+  return rows;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pad data access
+// ─────────────────────────────────────────────────────────────────────────────
+function getPad(note) {
+  return state.pages[currentPageIdx].pads.find(p => p.note === note);
+}
+function setPad(note, data) {
+  const page = state.pages[currentPageIdx];
+  const idx  = page.pads.findIndex(p => p.note === note);
+  if (idx >= 0) page.pads[idx] = { ...page.pads[idx], ...data };
+  else          page.pads.push({ note, ...data });
+}
+function deletePad(note) {
+  const page = state.pages[currentPageIdx];
+  page.pads = page.pads.filter(p => p.note !== note);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render grid
+// ─────────────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const container = document.getElementById('grid-container');
+  container.innerHTML = '';
+  const layout = buildGridLayout();
+
+  layout.forEach((rowDef, ri) => {
+    if (ri === 1) {
+      const gap = document.createElement('div');
+      gap.className = 'top-gap';
+      container.appendChild(gap);
+    }
+    const rowEl = document.createElement('div');
+    rowEl.className = 'lp-row';
+    rowDef.pads.forEach(p => rowEl.appendChild(makePad(p.note)));
+    if (rowDef.sidePad) {
+      const sep = document.createElement('div');
+      sep.className = 'row-sep';
+      rowEl.appendChild(sep);
+      rowEl.appendChild(makePad(rowDef.sidePad.note));
+    }
+    container.appendChild(rowEl);
+  });
+
+  updatePadCount();
+}
+
+function makePad(note) {
+  const el     = document.createElement('button');
+  el.className = 'pad';
+  el.dataset.note = note;
+
+  if (note === 104 || note === 105) {
+    el.classList.add('pad-nav');
+    el.title = note === 104 ? 'Page ← (hardwired)' : 'Page → (hardwired)';
+    const icon = document.createElement('div');
+    icon.className = 'pad-nav-icon';
+    icon.textContent = note === 104 ? '◄' : '►';
+    el.appendChild(icon);
+    const noteEl = document.createElement('div');
+    noteEl.className = 'pad-note';
+    noteEl.style.color = 'rgba(255,106,32,0.35)';
+    noteEl.textContent = note;
+    el.appendChild(noteEl);
+    return el;
+  }
+
+  const pad = getPad(note);
+
+  const colorName = pad ? (pad.color || 'OFF') : 'OFF';
+  if (colorName !== 'OFF') {
+    const css = colorCSS(colorName);
+    el.style.background = css;
+    el.style.borderColor = css + '80';
+  }
+
+  if (pad && pad.label) {
+    const lbl = document.createElement('div');
+    lbl.className = 'pad-label';
+    lbl.textContent = pad.label.substring(0, 5);
+    el.appendChild(lbl);
+  }
+
+  const noteEl = document.createElement('div');
+  noteEl.className = 'pad-note';
+  noteEl.textContent = note;
+  el.appendChild(noteEl);
+
+  if (pad && pad.action && pad.action.type !== 'none') el.classList.add('has-action');
+  if (note === selectedNote)                            el.classList.add('selected');
+
+  // white text on lit pads, dark text on ivory unlit pads
+  if (colorName !== 'OFF') {
+    el.querySelectorAll('.pad-label').forEach(l => {
+      l.style.color = 'rgba(255,255,255,0.92)';
+      l.style.textShadow = '0 1px 3px rgba(0,0,0,0.4)';
+    });
+    el.querySelectorAll('.pad-note').forEach(n => n.style.color = 'rgba(255,255,255,0.4)');
+  }
+
+  el.addEventListener('click', () => selectPad(note));
+  return el;
+}
+
+function selectPad(note) {
+  selectedNote = note;
+  renderGrid();
+  renderConfig();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render config panel
+// ─────────────────────────────────────────────────────────────────────────────
+function renderConfig() {
+  const empty = document.getElementById('config-empty');
+  const body  = document.getElementById('config-body');
+  const badge = document.getElementById('config-note-badge');
+
+  if (selectedNote === null) {
+    empty.style.display = 'flex';
+    body.style.display  = 'none';
+    badge.style.display = 'none';
+    return;
+  }
+
+  const pad = getPad(selectedNote) || { note: selectedNote, color:'OFF', label:'', action:{ type:'none' } };
+  empty.style.display = 'none';
+  body.style.display  = 'flex';
+  badge.style.display = '';
+  badge.textContent   = 'Note ' + selectedNote;
+
+  body.innerHTML = '';
+
+  body.appendChild(field('Label',
+    `<input type="text" id="f-label" maxlength="8" placeholder="e.g. Save"
+      value="${esc(pad.label||'')}"
+      oninput="updatePadField('label', this.value)">`
+  ));
+
+  const colorSec = document.createElement('div');
+  colorSec.innerHTML = `<div class="sub-label">LED Color</div>`;
+  const grid = document.createElement('div');
+  grid.className = 'color-grid';
+  COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (pad.color === c.name ? ' selected' : '');
+    sw.style.background = c.css;
+    sw.title = c.name;
+    sw.onclick = () => { updatePadField('color', c.name); renderConfig(); };
+    grid.appendChild(sw);
+  });
+  colorSec.appendChild(grid);
+  body.appendChild(colorSec);
+
+  body.appendChild(divider());
+
+  const actionType = (pad.action && pad.action.type) || 'none';
+  body.appendChild(field('Action',
+    `<select id="f-action-type" onchange="onActionTypeChange(this.value)">
+      <option value="none"     ${ actionType==='none'      ?'selected':''}>— No action —</option>
+      <option value="keys"     ${ actionType==='keys'      ?'selected':''}>Keyboard shortcut</option>
+      <option value="launch"   ${ actionType==='launch'    ?'selected':''}>Launch application</option>
+      <option value="toggle"   ${ actionType==='toggle'    ?'selected':''}>Toggle (on/off)</option>
+    </select>`
+  ));
+
+  const actionFields = document.createElement('div');
+  actionFields.id = 'action-fields';
+  body.appendChild(actionFields);
+  renderActionFields(actionType, pad);
+
+  body.appendChild(divider());
+
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'btn-sm btn-danger';
+  clearBtn.textContent = 'Clear this pad';
+  clearBtn.onclick = () => {
+    deletePad(selectedNote);
+    selectedNote = null;
+    renderGrid();
+    renderConfig();
+  };
+  body.appendChild(clearBtn);
+}
+
+function renderActionFields(type, pad) {
+  const af = document.getElementById('action-fields');
+  if (!af) return;
+  af.innerHTML = '';
+
+  if (type === 'keys' || type === 'toggle') {
+    const keys = (pad.action && pad.action.keys) || [];
+    const wrap = document.createElement('div');
+    wrap.className = 'field';
+    wrap.innerHTML = `<label>Keys (in order)</label>`;
+    const list = document.createElement('div');
+    list.className = 'keys-list';
+    list.id = 'keys-list';
+    keys.forEach((k, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'key-chip';
+      chip.innerHTML = `<span>${esc(k)}</span><button onclick="removeKey(${i})" title="Remove">×</button>`;
+      list.appendChild(chip);
+    });
+    wrap.appendChild(list);
+    const addRow = document.createElement('div');
+    addRow.className = 'key-add-row';
+    addRow.innerHTML = `
+      <select id="key-picker">${KEY_LIST.map(k=>`<option>${k}</option>`).join('')}</select>
+      <button class="btn-sm btn-accent" onclick="addKey()">Add</button>
+    `;
+    wrap.appendChild(addRow);
+    af.appendChild(wrap);
+
+    if (type === 'toggle') {
+      af.appendChild(divider());
+      const colorOn  = (pad.action && pad.action.colorOn)  || 'GREEN';
+      const colorOff = (pad.action && pad.action.colorOff) || 'RED';
+      const tgColors = document.createElement('div');
+      const onLabel = document.createElement('div');
+      onLabel.className = 'sub-label'; onLabel.textContent = 'Color when ON';
+      tgColors.appendChild(onLabel);
+      tgColors.appendChild(colorSwatchMini(colorOn, 'colorOn'));
+      const offLabel = document.createElement('div');
+      offLabel.className = 'sub-label'; offLabel.style.marginTop = '10px'; offLabel.textContent = 'Color when OFF';
+      tgColors.appendChild(offLabel);
+      tgColors.appendChild(colorSwatchMini(colorOff, 'colorOff'));
+      af.appendChild(tgColors);
+    }
+
+  } else if (type === 'launch') {
+    const path = (pad.action && pad.action.path) || '';
+    const args = (pad.action && pad.action.args) || '';
+    af.appendChild(field('Executable / File / URL',
+      `<input type="text" id="f-launch-path" placeholder="C:\\path\\to\\app.exe"
+        value="${esc(path)}" oninput="updateActionField('path', this.value)">`
+    ));
+    af.appendChild(field('Arguments (optional)',
+      `<input type="text" id="f-launch-args" placeholder="--flag value"
+        value="${esc(args)}" oninput="updateActionField('args', this.value)">`
+    ));
+  }
+}
+
+function colorSwatchMini(selected, fieldName) {
+  const g = document.createElement('div');
+  g.className = 'color-grid';
+  COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (selected === c.name ? ' selected' : '');
+    sw.style.background = c.css;
+    sw.title = c.name;
+    sw.onclick = () => { updateActionField(fieldName, c.name); renderConfig(); };
+    g.appendChild(sw);
+  });
+  return g;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reactive helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function updatePadField(key, val) {
+  const pad = getPad(selectedNote);
+  if (pad) {
+    pad[key] = val;
+  } else {
+    state.pages[currentPageIdx].pads.push(
+      { note: selectedNote, color:'OFF', label:'', action:{ type:'none' }, [key]: val }
+    );
+  }
+  refreshPadEl(selectedNote);
+}
+
+function updateActionField(key, val) {
+  const pad = getPad(selectedNote);
+  if (!pad) return;
+  if (!pad.action) pad.action = { type:'none' };
+  pad.action[key] = val;
+  refreshPadEl(selectedNote);
+}
+
+function onActionTypeChange(type) {
+  const pad = getPad(selectedNote);
+  if (pad) {
+    pad.action = { type };
+  } else {
+    state.pages[currentPageIdx].pads.push(
+      { note: selectedNote, color:'OFF', label:'', action:{ type } }
+    );
+  }
+  renderConfig();
+  refreshPadEl(selectedNote);
+}
+
+function addKey() {
+  const picker = document.getElementById('key-picker');
+  if (!picker) return;
+  const pad = getPad(selectedNote);
+  if (!pad) return;
+  if (!pad.action.keys) pad.action.keys = [];
+  pad.action.keys.push(picker.value);
+  renderConfig();
+}
+
+function removeKey(idx) {
+  const pad = getPad(selectedNote);
+  if (!pad || !pad.action.keys) return;
+  pad.action.keys.splice(idx, 1);
+  renderConfig();
+}
+
+function refreshPadEl(note) {
+  const existing = document.querySelector(`.pad[data-note="${note}"]`);
+  if (!existing) return;
+  existing.replaceWith(makePad(note));
+  updatePadCount();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page list
+// ─────────────────────────────────────────────────────────────────────────────
+function renderPageList() {
+  const list = document.getElementById('page-list');
+  list.innerHTML = '';
+  state.pages.forEach((page, i) => {
+    const item = document.createElement('div');
+    item.className = 'page-item' + (i === currentPageIdx ? ' active' : '');
+    item.draggable = true;
+    item.dataset.idx = i;
+    item.innerHTML = `
+      <div class="page-drag-handle" title="Drag to reorder">
+        <svg width="10" height="14" viewBox="0 0 10 14" fill="none">
+          <circle cx="3" cy="2.5" r="1.2" fill="currentColor"/>
+          <circle cx="7" cy="2.5" r="1.2" fill="currentColor"/>
+          <circle cx="3" cy="7"   r="1.2" fill="currentColor"/>
+          <circle cx="7" cy="7"   r="1.2" fill="currentColor"/>
+          <circle cx="3" cy="11.5" r="1.2" fill="currentColor"/>
+          <circle cx="7" cy="11.5" r="1.2" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="page-dot"></div>
+      <div class="page-item-name">${esc(page.name)}</div>
+      <button class="page-del" title="Delete page" onclick="deletePage(${i}, event)">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 2l9 9M11 2l-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    `;
+    item.addEventListener('click', () => switchPage(i));
+
+    // ── Drag-and-drop ───────────────────────────────────────────────────────
+    item.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', i);
+      setTimeout(() => item.classList.add('dragging'), 0);
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      list.querySelectorAll('.page-item').forEach(el => el.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.querySelectorAll('.page-item').forEach(el => el.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      item.classList.remove('drag-over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+      const toIdx   = i;
+      if (fromIdx === toIdx) return;
+      const moved = state.pages.splice(fromIdx, 1)[0];
+      state.pages.splice(toIdx, 0, moved);
+      if      (currentPageIdx === fromIdx) currentPageIdx = toIdx;
+      else if (currentPageIdx > fromIdx && currentPageIdx <= toIdx) currentPageIdx--;
+      else if (currentPageIdx < fromIdx && currentPageIdx >= toIdx) currentPageIdx++;
+      switchPage(currentPageIdx);
+    });
+
+    list.appendChild(item);
+  });
+}
+
+function switchPage(idx) {
+  currentPageIdx = idx;
+  selectedNote = null;
+  document.getElementById('page-name-display').textContent = state.pages[idx].name;
+  renderPageList();
+  renderGrid();
+  renderConfig();
+}
+
+function deletePage(idx, e) {
+  e.stopPropagation();
+  if (state.pages.length <= 1) { showStatus('Must have at least one page', true); return; }
+  state.pages.splice(idx, 1);
+  if (currentPageIdx >= state.pages.length) currentPageIdx = state.pages.length - 1;
+  switchPage(currentPageIdx);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Modal
+// ─────────────────────────────────────────────────────────────────────────────
+function openAddPage() {
+  document.getElementById('modal-bg').classList.add('open');
+  document.getElementById('new-page-name').value = '';
+  setTimeout(() => document.getElementById('new-page-name').focus(), 80);
+}
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('open');
+}
+function confirmAddPage() {
+  const name = document.getElementById('new-page-name').value.trim().toUpperCase();
+  if (!name) return;
+  state.pages.push({ name, pads: [] });
+  closeModal();
+  switchPage(state.pages.length - 1);
+}
+document.getElementById('modal-bg').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Export / Import
+// ─────────────────────────────────────────────────────────────────────────────
+function exportJSON() {
+  const clean = {
+    device: state.device,
+    pages: state.pages.map(page => ({
+      name: page.name,
+      pads: page.pads.map(pad => {
+        const p = { note: pad.note, color: pad.color || 'OFF' };
+        if (pad.label)                               p.label  = pad.label;
+        if (pad.action && pad.action.type !== 'none') p.action = { ...pad.action };
+        return p;
+      })
+    }))
+  };
+  const blob = new Blob([JSON.stringify(clean, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'config.json'; a.click();
+  URL.revokeObjectURL(url);
+  showStatus('config.json exported!');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.pages || !Array.isArray(data.pages) || data.pages.length === 0)
+        throw new Error('Missing or empty "pages" array');
+      for (const page of data.pages) {
+        if (typeof page.name !== 'string' || !page.name.trim())
+          throw new Error('A page is missing a valid "name"');
+        if (!Array.isArray(page.pads))
+          throw new Error(`Page "${page.name}" is missing a "pads" array`);
+      }
+      state = { device: data.device || 'Launchpad', pages: data.pages };
+      currentPageIdx = 0;
+      selectedNote   = null;
+      switchPage(0);
+      showStatus('Config loaded!');
+    } catch (err) {
+      showStatus('Import error: ' + err.message, true);
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function field(label, inputHTML) {
+  const div = document.createElement('div');
+  div.className = 'field';
+  div.innerHTML = `<label>${label}</label>${inputHTML}`;
+  return div;
+}
+
+function divider() {
+  const d = document.createElement('div');
+  d.className = 'divider';
+  return d;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function showStatus(msg, isError = false) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.classList.toggle('error', isError);
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); el.classList.remove('error'); }, 2500);
+}
+
+function updatePadCount() {
+  const page = state.pages[currentPageIdx];
+  const count = page ? page.pads.length : 0;
+  document.getElementById('pad-count').textContent =
+    count + ' pad' + (count !== 1 ? 's' : '') + ' configured';
+}
+
+// Boot
+renderPageList();
+renderGrid();
+renderConfig();
+</script>
+</body>
+</html>
